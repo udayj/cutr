@@ -43,15 +43,57 @@ pub fn get_args() -> MyResult<Config> {
                         Arg::with_name("delimiter")
                             .value_name("DELIMITER")
                             .short("d")
-                            .help("Delimiter")
-                            .default_value(",")
+                            .long("delim")
+                            .help("Field Delimiter")
+                            .default_value("\t")
                     )
                     .arg(
-                        Arg::with_name("extract")
+                        Arg::with_name("fields")
                             .short("f")
-                            .value_name("EXTRACT FIELD")
+                            .long("fields")
+                            .value_name("FIELDS")
                             .require_delimiter(true)
                             .multiple(true)
+                            .conflicts_with_all(&["chars","bytes"])
+                    )
+                    .arg(
+                        Arg::with_name("chars")
+                            .short("c")
+                            .long("chars")
+                            .value_name("CHARS")
+                            .require_delimiter(true)
+                            .multiple(true)
+                            .conflicts_with_all(&["fields","bytes"])
+                    )
+                    .arg(
+                        Arg::with_name("bytes")
+                            .short("b")
+                            .long("bytes")
+                            .value_name("BYTES")
+                            .require_delimiter(true)
+                            .multiple(true)
+                            .conflicts_with_all(&["fields","chars"])
                     )
                     .get_matches();
+
+                
+}
+
+fn parse_pos(range: &str) -> MyResult<PositionList> {
+
+    let mut result:PositionList = PositionList::new();
+
+      for part in range.split(",") {
+
+        if !part.contains("-") {
+            
+            result.push(Range{ start:part.parse::<usize>()?, end: part.parse::<usize>()?});
+        }
+        else {
+            let parts:Vec<&str> = part.split("-").collect();
+            result.push(Range{ start:parts[0].parse::<usize>()?, end: parts[1].parse::<usize>()?});
+        }
+        
+    }
+    return Ok(result);
 }
