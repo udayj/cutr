@@ -33,7 +33,24 @@ pub fn run(config: Config) -> MyResult<()> {
         match open(filename) {
 
             Err(err) => eprintln!("{}: {}", filename, err),
-            Ok(_) => println!("Opened {}", filename)
+            Ok(file) => {
+                
+                match &config.extract {
+
+                    Chars(range) => {
+                        
+                            for line in file.lines() {
+
+                                let actual_line = line.unwrap();
+                                println!("{}",extract_chars(&actual_line, &range));
+    
+                        }
+                    
+                    }
+                    Bytes(range) => {},
+                    Fields(range) => {}
+                }
+            }
         }
     }
     //println!("{:#?}", config);
@@ -202,14 +219,77 @@ fn open(filename: &str) -> MyResult<Box<dyn BufRead>> {
 fn extract_chars(line: &str, char_pos: &[Range<usize>]) -> String {
 
     let mut result = String::new();
-    
+    let line_as_char = line.chars().collect::<Vec<char>>();
+    //let new_str = "";
+    //println!("{}",&new_str[0..1]);
     for pos in char_pos {
 
         
-        result.push_str(&line[pos.start..pos.end]);
+        let extracted_val = line_as_char.get(pos.start..pos.end);
+
+        match extracted_val {
+
+            None => result.push_str(""),
+            Some(val) => result.push_str(String::from_iter(
+                val.iter()
+            ).as_str())
+        }
+        
     }
     
     result
 }
 
-fn extract_bytes
+fn extract_bytes(line:&str, byte_pos: &[Range<usize>]) -> String {
+
+    let mut result = String::new();
+    let line_as_bytes = line.as_bytes();
+    //let new_str = "";
+    //println!("{}",&new_str[0..1]);
+    for pos in byte_pos {
+
+        
+        let extracted_val = line_as_bytes.get(pos.start..pos.end);
+
+        match extracted_val {
+
+            None => result.push_str(""),
+            Some(val) => result.push_str(String::from_utf8_lossy(val).into_owned().as_str()
+                
+            )
+        }
+        
+    }
+    
+    result
+
+}
+
+#[cfg(test)]
+mod unit_tests {
+    use super::{extract_chars, extract_bytes, parse_pos};
+    use csv::StringRecord;
+
+    #[test]
+    fn test_extract_chars() {
+        assert_eq!(extract_chars("", &[0..1]), "".to_string());
+        assert_eq!(extract_chars("ábc", &[0..1]), "á".to_string());
+        assert_eq!(extract_chars("ábc", &[0..1, 2..3]), "ác".to_string());
+        assert_eq!(extract_chars("ábc", &[0..3]), "ábc".to_string());
+        assert_eq!(extract_chars("ábc", &[2..3, 1..2]), "cb".to_string());
+        assert_eq!(
+            extract_chars("ábc", &[0..1, 1..2, 4..5]),
+            "áb".to_string()
+        );
+    }
+
+    #[test]
+    fn test_extract_bytes() {
+        assert_eq!(extract_bytes("ábc", &[0..1]), "�".to_string());
+        assert_eq!(extract_bytes("ábc", &[0..2]), "á".to_string());
+        assert_eq!(extract_bytes("ábc", &[0..3]), "áb".to_string());
+        assert_eq!(extract_bytes("ábc", &[0..4]), "ábc".to_string());
+        assert_eq!(extract_bytes("ábc", &[3..4, 2..3]), "cb".to_string());
+        assert_eq!(extract_bytes("ábc", &[0..2, 5..6]), "á".to_string());
+    }
+}
