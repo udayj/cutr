@@ -7,6 +7,7 @@ use std::{error::Error,
     fs::File,
 };
 use regex::Regex;
+use csv::{ReaderBuilder, StringRecord};
 
 type MyResult<T> = Result<T, Box< dyn Error>>;
 type PositionList = Vec<Range<usize>>;
@@ -42,13 +43,40 @@ pub fn run(config: Config) -> MyResult<()> {
                             for line in file.lines() {
 
                                 let actual_line = line.unwrap();
-                                println!("{}",extract_chars(&actual_line, &range));
+                                println!("{}",extract_chars(&actual_line, range));
     
                         }
                     
+                    },
+                    Bytes(range) => {
+
+                        for line in file.lines() {
+                            let actual_line = line.unwrap();
+                            println!("{}", extract_bytes(&actual_line, range));
+                        }
+                    },
+                    Fields(range) => {
+
+                        let mut reader = ReaderBuilder::new()
+                                                            .has_headers(false)
+                                                            .delimiter(config.delimiter)
+                                                            .from_reader(file);
+                        let mut writer = csv::Writer::from_writer(io::stdout());
+                        for record in reader.records() {
+                                let mut result_str = String::new();
+                                for pos in range {
+
+                                    let records = record.as_ref().unwrap().iter().map(|v| format!("{}",v)).collect::<Vec<String>>();
+                                    let actual_records = records.get(pos.start..pos.end).unwrap();
+                                    
+                                    result_str.push_str(actual_records.join(std::str::from_utf8(&[config.delimiter])?).as_str());
+                                }
+                                
+                                println!("{}", result_str);
+                                
+                        }
+                        //writer.flush();
                     }
-                    Bytes(range) => {},
-                    Fields(range) => {}
                 }
             }
         }
