@@ -268,6 +268,18 @@ fn extract_chars(line: &str, char_pos: &[Range<usize>]) -> String {
     result
 }
 
+fn extract_chars_precise(line: &str, char_pos:&[Range<usize>]) ->  String {
+
+    let chars: Vec<_> = line.chars().collect();
+
+    char_pos
+        .iter()
+        .cloned()
+        .map(|range| range.filter_map(|i| chars.get(i)))
+        .flatten()
+        .collect()
+
+}
 fn extract_bytes(line:&str, byte_pos: &[Range<usize>]) -> String {
 
     let mut result = String::new();
